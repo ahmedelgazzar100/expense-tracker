@@ -1,0 +1,151 @@
+.form-wrapper {
+  max-width: 750px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.form-card {
+  background-color: var(--surface-color);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 10px 25px rgba(51, 61, 121, 0.08);
+  border: 1px solid var(--border-color);
+}
+
+.form-title {
+  margin: 0 0 1.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--secondary-color);
+  padding-bottom: 0.75rem;
+}
+
+.transaction-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.required-star {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text-main);
+  background-color: #fcfcfd;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(51, 61, 121, 0.12);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+/* أزرار الاختيار بين In و Out */
+.toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  height: 100%;
+}
+
+.toggle-btn {
+  padding: 0.65rem;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  background-color: #fcfcfd;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.toggle-btn.active-in {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.toggle-btn.active-out {
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+/* زرار الإرسال */
+.submit-btn {
+  margin-top: 0.5rem;
+  padding: 0.85rem 1.5rem;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.submit-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.submit-btn:active {
+  transform: scale(0.99);
+}
+
+/* Responsive للموبايل */
+@media (max-width: 600px) {
+  .form-card {
+    padding: 1.35rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}

@@ -1,30 +1,27 @@
 import React, { useState } from "react";
+import type { CreateTransactionData } from "../types/transaction";
 import "../styling/transactionForm.css";
 
-interface TransactionData {
-  date: string;
-  type: "in" | "out";
-  amount: string;
-  currency: "EGP" | "USD";
-  category: string;
-  description: string;
-  paymentMethod: "cash" | "visa";
-  notes: string;
-}
+type ChildProps = {
+  sendData: (data: CreateTransactionData) => Promise<void>;
+};
 
-export default function TransactionForm() {
+export default function TransactionForm(props: ChildProps) {
   const today = new Date().toISOString().split("T")[0];
 
-  const [formData, setFormData] = useState<TransactionData>({
+  const initialFormData: CreateTransactionData = {
     date: today,
     type: "out",
     amount: "",
     currency: "EGP",
     category: "",
     description: "",
-    paymentMethod: "cash",
+    payment_method: "cash",
     notes: "",
-  });
+  };
+
+  const [formData, setFormData] =
+    useState<CreateTransactionData>(initialFormData);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -38,9 +35,15 @@ export default function TransactionForm() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Submitted Transaction:", formData);
+
+    try {
+      await props.sendData(formData);
+      setFormData(initialFormData);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
@@ -56,6 +59,7 @@ export default function TransactionForm() {
                 type="date"
                 id="date"
                 name="date"
+                max={today}
                 value={formData.date}
                 onChange={handleChange}
               />
@@ -136,7 +140,7 @@ export default function TransactionForm() {
               <select
                 id="paymentMethod"
                 name="paymentMethod"
-                value={formData.paymentMethod}
+                value={formData.payment_method}
                 onChange={handleChange}
               >
                 <option value="cash">Cash</option>

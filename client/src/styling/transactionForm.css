@@ -63,6 +63,7 @@
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+  resize: none;
 }
 
 .form-group input:focus,
@@ -74,11 +75,6 @@
   box-shadow: 0 0 0 3px rgba(51, 61, 121, 0.12);
 }
 
-.form-group textarea {
-  resize: vertical;
-}
-
-/* أزرار الاختيار بين In و Out */
 .toggle-group {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -114,7 +110,6 @@
   color: #991b1b;
 }
 
-/* زرار الإرسال */
 .submit-btn {
   margin-top: 0.5rem;
   padding: 0.85rem 1.5rem;
@@ -138,7 +133,6 @@
   transform: scale(0.99);
 }
 
-/* Responsive للموبايل */
 @media (max-width: 600px) {
   .form-card {
     padding: 1.35rem;

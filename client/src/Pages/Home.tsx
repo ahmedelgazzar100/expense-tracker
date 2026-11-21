@@ -10,8 +10,10 @@ import PaginationComponent from "../Components/pagination";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import Filter from "../Components/Filter";
+import { useNavigate } from "react-router-dom";
 
 export default function Home() {
+  const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [message, setMessage] = useState("");
   const [itemTransactions, setItemTransactions] = useState<TransactionData[]>(
@@ -40,6 +42,10 @@ export default function Home() {
   useEffect(() => {
     async function getItems() {
       try {
+        // 1. نتأكد الأول إن اليوزر مسجل دخول
+        await axios.get("http://localhost:5000/api/check-auth", {
+          withCredentials: true,
+        });
         const response = await axios.get<GetItemsResponse>(
           "http://localhost:5000/api/getitems",
           {
@@ -54,7 +60,9 @@ export default function Home() {
         setTotalPages(response.data.totalPages);
         setItemTransactions(response.data.transactions);
       } catch (error) {
-        console.log(error);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          navigate("/");
+        }
       }
     }
     getItems();
@@ -62,6 +70,9 @@ export default function Home() {
 
   async function sendData(data: CreateTransactionData) {
     try {
+      await axios.get("http://localhost:5000/api/check-auth", {
+        withCredentials: true,
+      });
       const result = await axios.post(
         "http://localhost:5000/api/sendTransaction",
         data,
@@ -75,13 +86,17 @@ export default function Home() {
       setMessage(result.data.message);
       setShowToast(true);
     } catch (error) {
-      console.log(error);
-      throw error;
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate("/");
+      }
     }
   }
 
   async function handleDelete(id: number) {
     try {
+      await axios.get("http://localhost:5000/api/check-auth", {
+        withCredentials: true,
+      });
       const response = await axios.delete(
         `http://localhost:5000/api/deleteItem/${id}`,
         {
@@ -93,7 +108,9 @@ export default function Home() {
       setMessage(response.data.message);
       setShowToast(true);
     } catch (error) {
-      console.log(error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate("/");
+      }
     }
   }
 

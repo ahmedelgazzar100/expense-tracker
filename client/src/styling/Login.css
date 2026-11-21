@@ -1,0 +1,101 @@
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--secondary-color);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface-color, #ffffff);
+  padding: 40px 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(51, 61, 121, 0.12);
+  border: 1px solid var(--border-color, rgba(51, 61, 121, 0.15));
+  text-align: center;
+}
+
+.brand-header {
+  margin-bottom: 30px;
+}
+
+.brand-header h1 {
+  font-size: 1.8rem;
+  color: var(--primary-color, #333d79);
+  margin-bottom: 8px;
+}
+
+.brand-header p {
+  color: var(--text-muted, #5c638a);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.form-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  background-color: var(--surface-color, #ffffff);
+  color: var(--text-main, #1e2238);
+  border: 1.5px solid var(--border-color, rgba(51, 61, 121, 0.2));
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 5px rgba(51, 61, 121, 0.04);
+}
+
+.google-icon {
+  color: #ea4335;
+  font-size: 1.2rem;
+}
+
+.google-btn:hover {
+  background-color: var(--secondary-color, #faebef);
+  border-color: var(--primary-color, #333d79);
+  box-shadow: 0 6px 14px rgba(51, 61, 121, 0.14);
+}
+
+.google-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    padding: 30px 20px;
+  }
+
+  .brand-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100dvh;
+  background-color: var(--secondary-color, #faebef);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 16px;
+  overflow: hidden;
+}

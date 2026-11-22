@@ -1,9 +1,10 @@
+import { API_URL } from "../config.ts";
 import { FaGoogle } from "react-icons/fa";
 import "../styling/Login.css";
 
 export default function Login() {
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = `${API_URL}/api/auth/google`;
   };
 
   return (

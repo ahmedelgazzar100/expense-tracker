@@ -1,3 +1,4 @@
+import { API_URL } from "../config.ts";
 import Header from "../Components/Header";
 import TransactionForm from "../Components/Form";
 import Toast from "../Components/Toast";
@@ -39,15 +40,22 @@ export default function Home() {
     setCurrentPage(1);
   }
 
+  function handleError(error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      navigate("/");
+      return;
+    }
+    setMessage("حصل خطأ، حاول تاني");
+    setShowToast(true);
+  }
+
   useEffect(() => {
     async function getItems() {
       try {
         // 1. نتأكد الأول إن اليوزر مسجل دخول
-        await axios.get("http://localhost:5000/api/check-auth", {
-          withCredentials: true,
-        });
+
         const response = await axios.get<GetItemsResponse>(
-          "http://localhost:5000/api/getitems",
+          `${API_URL}/api/getitems`,
           {
             params: {
               ...filters,
@@ -56,61 +64,49 @@ export default function Home() {
             withCredentials: true,
           },
         );
-
         setTotalPages(response.data.totalPages);
         setItemTransactions(response.data.transactions);
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-          navigate("/");
-        }
+        handleError(error);
       }
     }
     getItems();
   }, [filters, currentPage, refreshKey]);
 
-  async function sendData(data: CreateTransactionData) {
+  async function sendData(data: CreateTransactionData): Promise<boolean> {
     try {
-      await axios.get("http://localhost:5000/api/check-auth", {
+      const result = await axios.post(`${API_URL}/api/sendTransaction`, data, {
         withCredentials: true,
       });
-      const result = await axios.post(
-        "http://localhost:5000/api/sendTransaction",
-        data,
-        {
-          withCredentials: true,
-        },
-      );
-      setItemTransactions((prev) => [result.data.transaction, ...prev]);
+
       setCurrentPage(1);
       setRefreshKey((prev) => prev + 1);
+
       setMessage(result.data.message);
       setShowToast(true);
+      return true;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate("/");
-      }
+      handleError(error);
+      return false;
     }
   }
 
   async function handleDelete(id: number) {
+    // if (!window.confirm("متأكد إنك عايز تمسح المعاملة؟")) return;
     try {
-      await axios.get("http://localhost:5000/api/check-auth", {
+      const response = await axios.delete(`${API_URL}/api/deleteItem/${id}`, {
         withCredentials: true,
       });
-      const response = await axios.delete(
-        `http://localhost:5000/api/deleteItem/${id}`,
-        {
-          withCredentials: true,
-        },
-      );
-      setItemTransactions((prev) => prev.filter((item) => item.id !== id));
-      setRefreshKey((prev) => prev + 1);
+      if (itemTransactions.length === 1 && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      } else {
+        setRefreshKey((prev) => prev + 1);
+      }
+
       setMessage(response.data.message);
       setShowToast(true);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate("/");
-      }
+      handleError(error);
     }
   }
 

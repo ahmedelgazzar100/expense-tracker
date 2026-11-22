@@ -28,11 +28,27 @@ export default function Filter(props: ChildProps) {
     props.handleFilters(updatedFilter);
   }
 
+  const emptyFilter: TransactionFilters = {
+    date: "",
+    type: "",
+    currency: "",
+    payment_method: "",
+  };
+
+  function handleReset() {
+    setFilter(emptyFilter);
+    props.handleFilters(emptyFilter);
+  }
+
   return (
     <div className="filter-wrapper">
       <div className="filter-header">
         <h3>Filter Transactions</h3>
-        <button type="button" className="reset-filter-btn">
+        <button
+          type="button"
+          className="reset-filter-btn"
+          onClick={handleReset}
+        >
           Reset
         </button>
       </div>

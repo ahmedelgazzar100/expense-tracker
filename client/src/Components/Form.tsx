@@ -3,7 +3,7 @@ import type { CreateTransactionData } from "../types/transaction";
 import "../styling/transactionForm.css";
 
 type ChildProps = {
-  sendData: (data: CreateTransactionData) => Promise<void>;
+  sendData: (data: CreateTransactionData) => Promise<boolean>;
 };
 
 export default function TransactionForm(props: ChildProps) {
@@ -39,8 +39,10 @@ export default function TransactionForm(props: ChildProps) {
     e.preventDefault();
 
     try {
-      await props.sendData(formData);
-      setFormData(initialFormData);
+      const ok = await props.sendData(formData);
+      if (ok) {
+        setFormData(initialFormData);
+      }
     } catch (error) {
       console.log(error);
     }
@@ -66,7 +68,7 @@ export default function TransactionForm(props: ChildProps) {
             </div>
 
             <div className="form-group">
-              <label>Type (Optional)</label>
+              <label>Type </label>
               <div className="toggle-group">
                 <button
                   type="button"
@@ -136,10 +138,10 @@ export default function TransactionForm(props: ChildProps) {
             </div>
 
             <div className="form-group">
-              <label htmlFor="paymentMethod">Payment Method</label>
+              <label htmlFor="payment_method">Payment Method</label>
               <select
-                id="paymentMethod"
-                name="paymentMethod"
+                id="payment_method"
+                name="payment_method"
                 value={formData.payment_method}
                 onChange={handleChange}
               >

@@ -1,3 +1,4 @@
+import env from "dotenv";
 import express from "express";
 import type { User } from "../types/user.js";
 import type { Request, Response } from "express";
@@ -7,14 +8,14 @@ import pg from "pg";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth2";
 import session from "express-session";
-import env from "dotenv";
+env.config();
 
 pg.types.setTypeParser(1082, (val: string) => val);
 
 const app = express();
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+console.log("CLIENT URL:", process.env.CLIENT_URL);
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
-env.config();
 
 const sessionSecret = process.env.SESSION_SECRET;
 
@@ -38,13 +39,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-const db = new pg.Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "expensetracker",
-  password: "123456",
-  port: 5432,
-});
+const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -67,7 +62,6 @@ app.get(
     try {
       const { date, type, currency, payment_method, page } = req.query;
       const currentPage = Math.max(1, Number(page) || 1);
-      console.log(date);
 
       let condition = "where 1=1";
       let params: (string | number)[] = [];
@@ -97,16 +91,17 @@ app.get(
       }
 
       const count = await db.query(
-        `select count(*) as totaltransactions from transactions ${condition}`,
-        params,
+        `select count(*) as totaltransactions from transactions ${condition} and user_id = $${index}`,
+        [...params, req.user.id],
       );
       const transactionsCount = parseInt(count.rows[0].totaltransactions);
+
       const totalPages = Math.ceil(transactionsCount / limit);
       const query = await db.query(
-        `select * from transactions ${condition} 
+        `select * from transactions ${condition} and user_id = $${index}
             ORDER BY id DESC     
-             LIMIT $${index} OFFSET $${index + 1} `,
-        [...params, limit, offset],
+             LIMIT $${index + 1} OFFSET $${index + 2} `,
+        [...params, req.user.id, limit, offset],
       );
 
       res.status(200).json({
@@ -217,8 +212,8 @@ app.delete("/api/deleteItem/:id", async (req, res) => {
 
   try {
     const result = await db.query(
-      "DELETE FROM transactions WHERE id = $1 RETURNING id",
-      [id],
+      "DELETE FROM transactions WHERE id = $1 and user_id=$2 RETURNING id",
+      [id, req.user.id],
     );
 
     if (result.rowCount === 0) {
@@ -246,15 +241,15 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
   throw new Error("Google OAuth credentials are missing");
 }
 
-app.get("/api/check-auth", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.json({ isAuthenticated: true, user: req.user });
-  } else {
-    res
-      .status(401)
-      .json({ isAuthenticated: false, message: "غير مسجل الدخول" });
-  }
-});
+// app.get("/api/check-auth", (req, res) => {
+//   if (req.isAuthenticated()) {
+//     res.json({ isAuthenticated: true, user: req.user });
+//   } else {
+//     res
+//       .status(401)
+//       .json({ isAuthenticated: false, message: "غير مسجل الدخول" });
+//   }
+// });
 
 app.get("/api/logout", (req, res, next) => {
   req.logout(function (err) {
@@ -281,10 +276,10 @@ app.get(
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:5173",
+    failureRedirect: process.env.CLIENT_URL,
   }),
   (req, res) => {
-    res.redirect("http://localhost:5173/home");
+    res.redirect(`${process.env.CLIENT_URL}/home`);
   },
 );
 
@@ -294,7 +289,7 @@ passport.use(
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:5000/auth/google/callback",
+      callbackURL: `${process.env.SERVER_URL}/auth/google/callback`,
     },
     async (accessToken, refreshToken, profile, cb) => {
       try {
@@ -336,7 +331,6 @@ passport.serializeUser((user, cb) => {
 });
 
 passport.deserializeUser(async (id, cb) => {
-  console.log("done");
   try {
     const result = await db.query<User>("SELECT * FROM users WHERE id = $1", [
       id,

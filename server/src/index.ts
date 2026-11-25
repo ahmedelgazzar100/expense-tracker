@@ -1,4 +1,7 @@
 import env from "dotenv";
+import type { ErrorRequestHandler } from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import express from "express";
 import type { User } from "../types/user.js";
 import type { Request, Response } from "express";
@@ -8,16 +11,24 @@ import pg from "pg";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth2";
 import session from "express-session";
+import type { RequestHandler } from "express";
 env.config();
 
 pg.types.setTypeParser(1082, (val: string) => val);
 
 const app = express();
-console.log("CLIENT URL:", process.env.CLIENT_URL);
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
+app.use(helmet());
 
 const sessionSecret = process.env.SESSION_SECRET;
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  console.error(err);
+
+  res.status(500).json({
+    message: "حدث خطأ في السيرفر",
+  });
+};
 
 if (!sessionSecret) {
   throw new Error("SESSION_SECRET is missing");
@@ -42,6 +53,7 @@ app.use(passport.session());
 const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use("/api", rateLimit({ windowMs: 15 * 60 * 1000, limit: 300 })); //every 15 min u have 300 req
 
 app.use(express.static("public"));
 
@@ -53,12 +65,23 @@ type TransactionQuery = {
   page?: string;
 };
 
+const requireAuth: RequestHandler = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({
+      message: "غير مسجل الدخول",
+    });
+
+    return;
+  }
+
+  next();
+};
+
+app.use("/api/transactions", requireAuth);
+
 app.get(
-  "/api/getitems",
-  async (req: Request<{}, {}, {}, TransactionQuery>, res: Response) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "غير مسجل الدخول" });
-    }
+  "/api/transactions",
+  async (req: Request<{}, {}, {}, TransactionQuery>, res: Response, next) => {
     try {
       const { date, type, currency, payment_method, page } = req.query;
       const currentPage = Math.max(1, Number(page) || 1);
@@ -92,16 +115,16 @@ app.get(
 
       const count = await db.query(
         `select count(*) as totaltransactions from transactions ${condition} and user_id = $${index}`,
-        [...params, req.user.id],
+        [...params, req.user!.id],
       );
       const transactionsCount = parseInt(count.rows[0].totaltransactions);
 
       const totalPages = Math.ceil(transactionsCount / limit);
       const query = await db.query(
         `select * from transactions ${condition} and user_id = $${index}
-            ORDER BY id DESC     
+            ORDER BY date DESC, id DESC    
              LIMIT $${index + 1} OFFSET $${index + 2} `,
-        [...params, req.user.id, limit, offset],
+        [...params, req.user!.id, limit, offset],
       );
 
       res.status(200).json({
@@ -110,17 +133,31 @@ app.get(
         totalPages: totalPages,
       });
     } catch (error) {
-      console.log(error);
-      res.status(500).json({ message: "Server Error" });
+      next(error);
     }
   },
 );
 
-app.post("/api/sendTransaction", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "غير مسجل الدخول" });
-  }
+function validateTransaction(body: any): string | null {
+  const { date, type, amount, currency, payment_method } = body;
+  if (!date || !amount || !currency || !type) return "Missing required fields";
+  if (isNaN(Number(amount)) || Number(amount) <= 0) return "Invalid amount";
+  if (!["in", "out"].includes(type)) return "Invalid type";
+  if (!["EGP", "USD"].includes(currency)) return "Invalid currency";
+  if (!["cash", "visa"].includes(payment_method))
+    return "Invalid payment method";
+  return null;
+}
+
+app.post("/api/transactions", async (req, res, next) => {
   try {
+    const error = validateTransaction(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        message: error,
+      });
+    }
     const {
       date,
       type,
@@ -131,41 +168,6 @@ app.post("/api/sendTransaction", async (req, res) => {
       payment_method,
       notes,
     } = req.body;
-
-    // Check required fields
-    if (!date || !amount || !currency || !type) {
-      return res.status(400).json({
-        message: "Missing required fields",
-      });
-    }
-
-    // Check amount
-    if (isNaN(Number(amount)) || Number(amount) <= 0) {
-      return res.status(400).json({
-        message: "Invalid amount",
-      });
-    }
-
-    // Check type
-    if (!["in", "out"].includes(type)) {
-      return res.status(400).json({
-        message: "Invalid type",
-      });
-    }
-
-    // Check currency
-    if (!["EGP", "USD"].includes(currency)) {
-      return res.status(400).json({
-        message: "Invalid currency",
-      });
-    }
-
-    // Check payment method
-    if (!["cash", "visa"].includes(payment_method)) {
-      return res.status(400).json({
-        message: "Invalid payment method",
-      });
-    }
 
     const result = await db.query(
       `INSERT INTO transactions
@@ -190,18 +192,61 @@ app.post("/api/sendTransaction", async (req, res) => {
       transaction: result.rows[0],
     });
   } catch (error) {
-    console.log(error);
-
-    return res.status(500).json({
-      message: "Server Error",
-    });
+    next(error);
   }
 });
 
-app.delete("/api/deleteItem/:id", async (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "غير مسجل الدخول" });
+app.patch("/api/transactions/:id", async (req, res, next) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ message: "Invalid ID" });
   }
+  const error = validateTransaction(req.body);
+  if (error) return res.status(400).json({ message: error });
+
+  const {
+    date,
+    type,
+    amount,
+    currency,
+    category,
+    description,
+    payment_method,
+    notes,
+  } = req.body;
+  try {
+    const result = await db.query(
+      `UPDATE transactions
+       SET date=$1, type=$2, amount=$3, currency=$4, category=$5,
+           description=$6, payment_method=$7, notes=$8
+       WHERE id=$9 AND user_id=$10
+       RETURNING *`,
+      [
+        date,
+        type,
+        amount,
+        currency,
+        category,
+        description ?? null,
+        payment_method,
+        notes ?? null,
+        id,
+        req.user!.id,
+      ],
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+    res.json({
+      message: "Transaction updated successfully",
+      transaction: result.rows[0],
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete("/api/transactions/:id", async (req, res, next) => {
   const id = Number(req.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
@@ -213,7 +258,7 @@ app.delete("/api/deleteItem/:id", async (req, res) => {
   try {
     const result = await db.query(
       "DELETE FROM transactions WHERE id = $1 and user_id=$2 RETURNING id",
-      [id, req.user.id],
+      [id, req.user!.id],
     );
 
     if (result.rowCount === 0) {
@@ -226,11 +271,7 @@ app.delete("/api/deleteItem/:id", async (req, res) => {
       message: "Transaction deleted successfully",
     });
   } catch (error) {
-    console.log(error);
-
-    return res.status(500).json({
-      message: "Server Error",
-    });
+    next(error);
   }
 });
 
@@ -251,14 +292,14 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
 //   }
 // });
 
-app.get("/api/logout", (req, res, next) => {
+app.post("/api/logout", (req, res, next) => {
   req.logout(function (err) {
     if (err) {
       return next(err);
     }
     req.session.destroy((err) => {
       if (err) {
-        return console.log("Error destroying session:", err);
+        return next(err);
       }
       res.clearCookie("connect.sid");
       return res.json({ message: "تم تسجيل الخروج بنجاح" });
@@ -347,5 +388,8 @@ passport.deserializeUser(async (id, cb) => {
     );
   }
 });
+
+//error middleware
+app.use(errorHandler);
 
 app.listen(5000, () => console.log("Server running on port 5000"));

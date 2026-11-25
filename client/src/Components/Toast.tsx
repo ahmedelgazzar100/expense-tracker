@@ -4,10 +4,16 @@ import "../styling/toast.css";
 interface ToastProps {
   message: string;
   isVisible: boolean;
+  type: "success" | "error";
   onClose: () => void;
 }
 
-export default function Toast({ message, isVisible, onClose }: ToastProps) {
+export default function Toast({
+  message,
+  type,
+  isVisible,
+  onClose,
+}: ToastProps) {
   useEffect(() => {
     if (!isVisible) return;
 
@@ -19,9 +25,13 @@ export default function Toast({ message, isVisible, onClose }: ToastProps) {
 
   if (!isVisible) return null;
 
+  const icon = type === "error" ? "✕" : "✓";
+
   return (
     <div className="toast-container">
-      <span className="toast-icon">✓</span>
+      <span className={type === "error" ? "toast-error" : "toast-success"}>
+        {icon}
+      </span>
       <span className="toast-text">{message}</span>
     </div>
   );

@@ -7,7 +7,7 @@ type ChildProps = {
 };
 
 export default function Filter(props: ChildProps) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA");
 
   const [filter, setFilter] = useState<TransactionFilters>({
     date: "",

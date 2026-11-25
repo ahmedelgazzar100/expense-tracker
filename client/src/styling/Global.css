@@ -7,3 +7,41 @@
   --text-muted: #5c638a;
   --border-color: rgba(51, 61, 121, 0.15);
 }
+
+.bottom-btn-wrapper {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.75rem;
+}
+
+.bottom-action-btn {
+  background-color: var(--primary-color, #333d79);
+  color: var(--surface-color, #ffffff);
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.bottom-action-btn:hover {
+  background-color: var(--primary-hover, #252c59);
+}
+
+.bottom-action-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 600px) {
+  .bottom-btn-wrapper {
+    justify-content: stretch;
+  }
+
+  .bottom-action-btn {
+    width: 100%;
+  }
+}

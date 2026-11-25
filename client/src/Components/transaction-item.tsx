@@ -1,19 +1,31 @@
 import "../styling/transactionItem.css";
 import type { TransactionData } from "../types/transaction";
-import Chip from "@mui/material/Chip";
+import IconButton from "@mui/material/IconButton";
 import DeleteIcon from "@mui/icons-material/Delete";
+import Button from "@mui/material/Button";
+import EditIcon from "@mui/icons-material/Edit";
 
 interface Props {
   transaction: TransactionData;
   handleDelete: (id: number) => void;
+  onEdit: (transactionData: TransactionData) => void;
 }
 
-export default function TransactionItem({ transaction, handleDelete }: Props) {
+export default function TransactionItem({
+  transaction,
+  handleDelete,
+  onEdit,
+}: Props) {
   const isIncome = transaction.type === "in";
   const shortDate = transaction.date.split("T")[0];
 
   function onDelete() {
     handleDelete(transaction.id);
+  }
+
+  function handleClick() {
+    console.log(transaction);
+    onEdit(transaction);
   }
 
   return (
@@ -46,13 +58,12 @@ export default function TransactionItem({ transaction, handleDelete }: Props) {
           <span className="payment-badge">{transaction.payment_method}</span>
         )}
       </div>
-      <Chip
-        label="Delete Transaction"
-        onClick={onDelete}
-        onDelete={onDelete} //
-        deleteIcon={<DeleteIcon />} //
-        variant="outlined"
-      />
+      <IconButton aria-label="Delete transaction" onClick={onDelete}>
+        <DeleteIcon />
+      </IconButton>
+      <Button variant="outlined" startIcon={<EditIcon />} onClick={handleClick}>
+        Edit
+      </Button>
     </div>
   );
 }

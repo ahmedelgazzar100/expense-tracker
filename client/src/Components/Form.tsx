@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import type { CreateTransactionData } from "../types/transaction";
+import type { TransactionData } from "../types/transaction";
+
 import "../styling/transactionForm.css";
 
 type ChildProps = {
   sendData: (data: CreateTransactionData) => Promise<boolean>;
+  initialData: TransactionData | undefined;
 };
 
 export default function TransactionForm(props: ChildProps) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA");
 
   const initialFormData: CreateTransactionData = {
     date: today,
@@ -20,8 +23,13 @@ export default function TransactionForm(props: ChildProps) {
     notes: "",
   };
 
-  const [formData, setFormData] =
-    useState<CreateTransactionData>(initialFormData);
+  const [formData, setFormData] = useState<CreateTransactionData>(() =>
+    props.initialData
+      ? {
+          ...props.initialData,
+        }
+      : initialFormData,
+  );
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -51,8 +59,9 @@ export default function TransactionForm(props: ChildProps) {
   return (
     <section className="form-wrapper">
       <div className="form-card">
-        <h2 className="form-title">Add New Transaction</h2>
-
+        <h2 className="form-title">
+          {props.initialData ? "Edit Transaction" : "Add New Transaction"}
+        </h2>
         <form onSubmit={handleSubmit} className="transaction-form">
           <div className="form-row">
             <div className="form-group">
@@ -176,7 +185,7 @@ export default function TransactionForm(props: ChildProps) {
           </div>
 
           <button type="submit" className="submit-btn">
-            Save Transaction
+            {props.initialData ? "Update Transaction" : "Save Transaction"}
           </button>
         </form>
       </div>
